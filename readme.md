@@ -4,13 +4,13 @@ Some useful classes for NodeJS and Browser
 
 ## Classes
 
-### BitStream
+### [BitStream](./bitstream.ts)
 
 BitStream class like in RakNet and SNET
 
 Requirements: no
 
-### SampQuery
+### [SampQuery](./sampquery.ts)
 
 SampQuery class for SAMP
 
