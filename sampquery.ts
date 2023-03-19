@@ -8,13 +8,7 @@ export const resolveDns = (address: string) =>
       if (e) return rej(e);
       res(addreses[0]);
     })
-  )
-  // await new Promise<string>((res, rej) => {
-  //   DNSResolve(ip!, (err, address) => {
-  //     if (err) return rej(err);
-  //     res(address[0]);
-  //   });
-  // })
+  );
 
 
 export interface SampQueryOptions {
