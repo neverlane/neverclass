@@ -24,23 +24,15 @@ export interface SampQueryOptions {
    * Request timeout
    */
   timeout?: number;
+  /**
+   * Resolve host
+   */
+  resolveHost?: boolean;
 }
 
 export type SampQueryOpcode = 'i' | 'r' | 'd' | 'c';
 
-export interface SampQueryRequestOptions<O extends SampQueryOpcode = SampQueryOpcode> {
-  /**
-   * Server IP address
-   */
-  ip?: string;
-  /**
-   * Server port
-   */
-  port?: number;
-  /**
-   * Request timeout
-   */
-  timeout?: number;
+export interface SampQueryRequestOptions<O extends SampQueryOpcode = SampQueryOpcode> extends SampQueryOptions {
   /**
    * Opcode
    */
@@ -138,11 +130,13 @@ export class SampQuery {
     ip = this.options.ip,
     port = this.options.port,
     timeout = this.options.timeout,
+    resolveHost = this.options.resolveHost,
     opcode
   }: SampQueryRequestOptions): Promise<any> {
     if (!ip) ip = '127.0.0.1';
     if (!port) port = 7777;
     if (!timeout) timeout = 2000;
+    if (resolveHost === undefined) resolveHost = false;
 
     let resolve: (value: any) => void;
     let reject: (reason?: any) => void;
@@ -151,7 +145,7 @@ export class SampQuery {
       resolve = r, reject = rj;
     });
 
-    ip = await resolveDns(ip);
+    if (resolveHost) ip = await resolveDns(ip);
 
     const socket = dgram.createSocket('udp4');
 
