@@ -1,7 +1,8 @@
 import dns from 'dns';
 import dgram, { Socket } from 'dgram';
 import { BitStream } from './bitstream';
-
+import iconv from 'iconv-lite';
+ 
 export const resolveDns = (address: string) => 
   new Promise<string>((res, rej) => 
     dns.resolve(address, (e, addreses) => {
@@ -10,6 +11,9 @@ export const resolveDns = (address: string) =>
     })
   );
 
+export const decodeWin1251String = (str: Buffer) => iconv.decode(str, 'win1251');
+export const bsReadCP1251String = (bs: BitStream, len: number) =>
+  decodeWin1251String(bs.readBytes(len));
 
 export interface SampQueryOptions {
   /**
@@ -174,24 +178,28 @@ export class SampQuery {
         clearTimeout(controller);
         if (message.length < 11) return reject(new Error(`[sampquery] [${this.options.ip}:${this.options.port}] invalid message from socket`));
         socket.close();
-        let bytes = BitStream.from(message);
-        bytes = bytes.slice(11);
+        let bytes = BitStream.from(message).slice(11);
         if (opcode === 'i') {
-          // return resolve({})
+          const closed = bytes.readBoolean();
+          const players = bytes.readUInt16()
+          const maxPlayers = bytes.readUInt16()
+          const serverName = bsReadCP1251String(bytes, bytes.readUInt32());
+          const gameModeName = bsReadCP1251String(bytes, bytes.readUInt32());
+          const language = bsReadCP1251String(bytes, bytes.readUInt32());
           return resolve({
-            closed: !!bytes.readUInt8(),
-            players: bytes.readUInt16(),
-            maxPlayers: bytes.readUInt16(),
-            serverName: bytes.readString(bytes.readUInt32()),
-            gameModeName: bytes.readString(bytes.readUInt32()),
-            language: bytes.readString(bytes.readUInt32()),
+            closed,
+            players,
+            maxPlayers,
+            serverName,
+            gameModeName,
+            language
           });
         } else if (opcode === 'r') {
           const rulesResult: SampQueryRulesResult = [];
           const count = bytes.readUInt16()
           for (let i = 0; i < count; i++) {
-            const name = <SampQueryServerRule> bytes.readString(bytes.readUInt8());
-            const value = bytes.readString(bytes.readUInt8());
+            const name = <SampQueryServerRule> bsReadCP1251String(bytes, bytes.readUInt8());
+            const value = bsReadCP1251String(bytes, bytes.readUInt8());
             rulesResult.push({
               name,
               value
@@ -202,7 +210,7 @@ export class SampQuery {
           const playersResult: SampQueryPlayersDetailedResult = [];
           for (let i = 0; i < bytes.readUInt16(); i++) {
             const id = bytes.readUInt8();
-            const name = bytes.readString(bytes.readUInt8());
+            const name = bsReadCP1251String(bytes, bytes.readUInt8());
             const score = bytes.readUInt32();
             const ping = bytes.readUInt32();
             playersResult.push({
@@ -216,7 +224,7 @@ export class SampQuery {
         } else if (opcode === 'c') {
           const playersStatsResult: SampQueryPlayersResult = [];
           for (let i = 0; i < bytes.readUInt16(); i++) {
-            const name = bytes.readString(bytes.readUInt8());
+            const name = bsReadCP1251String(bytes, bytes.readUInt8());
             const score = bytes.readUInt32();
             playersStatsResult.push({
               name,
@@ -232,3 +240,17 @@ export class SampQuery {
     return promise;
   }
 }
+
+// const sq = new SampQuery({
+//   timeout: 25000
+// })
+
+// sq.getServerInfo({
+//   ip: '185.169.134.60',
+//   port: 8904
+//   // ip: 'neverlane.xyz',
+//   // port: 7777,
+//   // resolveHost: true
+// }).then(v => {
+//   console.log(v)
+// })

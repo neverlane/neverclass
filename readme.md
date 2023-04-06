@@ -14,4 +14,4 @@ Requirements: no
 
 SampQuery class for SAMP
 
-Requirements: [BitStream](#bitstream)
+Requirements: [BitStream](#bitstream), [iconv-lite](https://npm.im/iconv-lite)
